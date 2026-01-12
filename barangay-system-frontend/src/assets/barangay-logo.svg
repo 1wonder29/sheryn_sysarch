@@ -1,0 +1,7 @@
+<svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Government-style shield/badge design -->
+  <circle cx="30" cy="30" r="28" fill="#2E7D32" stroke="#FFFFFF" stroke-width="2"/>
+  <path d="M30 10 L40 20 L40 35 L30 50 L20 35 L20 20 Z" fill="#FFFFFF"/>
+  <circle cx="30" cy="30" r="8" fill="#2E7D32"/>
+  <text x="30" y="35" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#FFFFFF" text-anchor="middle">B</text>
+</svg>

@@ -24,12 +24,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../api';
 
 const POSITIONS = [
-  'Punong Barangay',
-  'Barangay Kagawad',
-  'Sangguniang Kabataan Chairperson',
-  'Barangay Secretary',
-  'Barangay Treasurer',
-  'Barangay Clerk',
+  'Chairman',
+  'Kagawad',
+  'Secretary',
+  'Treasurer',
 ];
 
 const API_ROOT = 'http://localhost:5000'; // for signature images
@@ -37,7 +35,7 @@ const API_ROOT = 'http://localhost:5000'; // for signature images
 const emptyForm = {
   id: null,
   full_name: '',
-  position: 'Punong Barangay',
+  position: 'Chairman',
   order_no: 0,
   is_captain: false,
   is_secretary: false,
@@ -50,6 +48,7 @@ const OfficialsPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [signatureFile, setSignatureFile] = useState(null);
+  const [pictureFile, setPictureFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -79,6 +78,7 @@ const OfficialsPage = () => {
       ...emptyForm,
     });
     setSignatureFile(null);
+    setPictureFile(null);
     setError('');
     setDialogOpen(true);
   };
@@ -93,6 +93,7 @@ const OfficialsPage = () => {
       is_secretary: !!off.is_secretary,
     });
     setSignatureFile(null);
+    setPictureFile(null);
     setError('');
     setDialogOpen(true);
   };
@@ -111,15 +112,20 @@ const OfficialsPage = () => {
     setForm((prev) => ({
       ...prev,
       position: value,
-      is_captain: value === 'Punong Barangay' ? true : prev.is_captain,
+      is_captain: value === 'Chairman' ? true : prev.is_captain,
       is_secretary:
-        value === 'Barangay Secretary' ? true : prev.is_secretary,
+        value === 'Secretary' ? true : prev.is_secretary,
     }));
   };
 
-  const handleFileChange = (e) => {
+  const handleSignatureFileChange = (e) => {
     const file = e.target.files?.[0] || null;
     setSignatureFile(file);
+  };
+
+  const handlePictureFileChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setPictureFile(file);
   };
 
   const validateForm = () => {
@@ -145,6 +151,9 @@ const OfficialsPage = () => {
       fd.append('is_secretary', form.is_secretary ? '1' : '0');
       if (signatureFile) {
         fd.append('signature', signatureFile);
+      }
+      if (pictureFile) {
+        fd.append('picture', pictureFile);
       }
 
       if (form.id) {
@@ -220,6 +229,7 @@ const OfficialsPage = () => {
                   <TableCell>Position</TableCell>
                   <TableCell>Captain</TableCell>
                   <TableCell>Secretary</TableCell>
+                  <TableCell>Picture</TableCell>
                   <TableCell>Signature</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
@@ -227,7 +237,7 @@ const OfficialsPage = () => {
               <TableBody>
                 {officials.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={8} align="center">
                       No officials encoded yet.
                     </TableCell>
                   </TableRow>
@@ -239,6 +249,17 @@ const OfficialsPage = () => {
                       <TableCell>{o.position}</TableCell>
                       <TableCell>{o.is_captain ? 'Yes' : ''}</TableCell>
                       <TableCell>{o.is_secretary ? 'Yes' : ''}</TableCell>
+                      <TableCell>
+                        {o.picture_path ? (
+                          <img
+                            src={`${API_ROOT}${o.picture_path}`}
+                            alt={o.full_name}
+                            style={{ height: 50, width: 50, objectFit: 'cover', borderRadius: '4px' }}
+                          />
+                        ) : (
+                          <Typography variant="caption">None</Typography>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {o.signature_path ? (
                           <img
@@ -325,24 +346,104 @@ const OfficialsPage = () => {
             </Grid>
             <Grid item xs={12}>
               <Typography variant="body2">
-                Punong Barangay and Barangay Secretary flags are used to
+                Chairman and Secretary flags are used to
                 auto-fill Certificates.
               </Typography>
             </Grid>
-            <Grid item xs={12}>
-              <Button variant="outlined" component="label">
+            <Grid item xs={12} md={6}>
+              <Button variant="outlined" component="label" fullWidth>
+                {pictureFile ? 'Change Picture' : 'Upload Picture'}
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handlePictureFileChange}
+                />
+              </Button>
+              {pictureFile && (
+                <Box sx={{ mt: 2 }}>
+                  <img
+                    src={URL.createObjectURL(pictureFile)}
+                    alt="Preview"
+                    style={{
+                      maxWidth: '200px',
+                      maxHeight: '200px',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      display: 'block',
+                      margin: '8px auto',
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ display: 'block', textAlign: 'center' }}>
+                    {pictureFile.name}
+                  </Typography>
+                </Box>
+              )}
+              {form.id && officials.find((o) => o.id === form.id)?.picture_path && !pictureFile && (
+                <Box sx={{ mt: 2 }}>
+                  <img
+                    src={`${API_ROOT}${officials.find((o) => o.id === form.id).picture_path}`}
+                    alt="Current"
+                    style={{
+                      maxWidth: '200px',
+                      maxHeight: '200px',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      display: 'block',
+                      margin: '8px auto',
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ display: 'block', textAlign: 'center' }}>
+                    Current picture
+                  </Typography>
+                </Box>
+              )}
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Button variant="outlined" component="label" fullWidth>
                 {signatureFile ? 'Change Signature' : 'Upload Signature'}
                 <input
                   type="file"
                   hidden
                   accept="image/*"
-                  onChange={handleFileChange}
+                  onChange={handleSignatureFileChange}
                 />
               </Button>
               {signatureFile && (
-                <Typography variant="caption" sx={{ ml: 1 }}>
-                  {signatureFile.name}
-                </Typography>
+                <Box sx={{ mt: 2 }}>
+                  <img
+                    src={URL.createObjectURL(signatureFile)}
+                    alt="Signature Preview"
+                    style={{
+                      maxWidth: '200px',
+                      maxHeight: '100px',
+                      objectFit: 'contain',
+                      display: 'block',
+                      margin: '8px auto',
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ display: 'block', textAlign: 'center' }}>
+                    {signatureFile.name}
+                  </Typography>
+                </Box>
+              )}
+              {form.id && officials.find((o) => o.id === form.id)?.signature_path && !signatureFile && (
+                <Box sx={{ mt: 2 }}>
+                  <img
+                    src={`${API_ROOT}${officials.find((o) => o.id === form.id).signature_path}`}
+                    alt="Current Signature"
+                    style={{
+                      maxWidth: '200px',
+                      maxHeight: '100px',
+                      objectFit: 'contain',
+                      display: 'block',
+                      margin: '8px auto',
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ display: 'block', textAlign: 'center' }}>
+                    Current signature
+                  </Typography>
+                </Box>
               )}
             </Grid>
             {error && (

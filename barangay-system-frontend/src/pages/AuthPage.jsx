@@ -1,5 +1,5 @@
 // src/pages/AuthPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -12,9 +12,38 @@ import {
   MenuItem,
 } from '@mui/material';
 import api from '../api';
+import barangayLogo from '../assets/barangay-logo.svg';
 
 const AuthPage = ({ onLogin }) => {
   const [tab, setTab] = useState(0); // 0 = Login, 1 = Register
+  const [logo, setLogo] = useState(() => {
+    const savedLogo = localStorage.getItem('barangayLogo');
+    return savedLogo || barangayLogo;
+  });
+
+  // Listen for logo changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedLogo = localStorage.getItem('barangayLogo');
+      setLogo(savedLogo || barangayLogo);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Check periodically for same-tab updates
+    const interval = setInterval(() => {
+      const savedLogo = localStorage.getItem('barangayLogo');
+      const currentLogo = savedLogo || barangayLogo;
+      if (currentLogo !== logo) {
+        setLogo(currentLogo);
+      }
+    }, 500);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [logo]);
 
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [registerForm, setRegisterForm] = useState({
@@ -111,30 +140,150 @@ const AuthPage = ({ onLogin }) => {
     <Box
       sx={{
         minHeight: '100vh',
-        bgcolor: '#f5f5f5',
+        bgcolor: '#F5F5F5',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 50%, #F5F5F5 100%)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '4px',
+          background: 'linear-gradient(90deg, #2E7D32 0%, #4CAF50 100%)',
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          bottom: 0,
+          right: 0,
+          width: '200px',
+          height: '200px',
+          background: 'radial-gradient(circle, rgba(46, 125, 50, 0.1) 0%, transparent 70%)',
+          borderRadius: '50%',
+        },
       }}
     >
-      <Grid container justifyContent="center">
-        <Grid item xs={11} sm={8} md={5}>
-          <Paper sx={{ p: 3 }} elevation={4}>
-            <Typography variant="h5" gutterBottom align="center">
-              Barangay System
-            </Typography>
-
-            <Tabs
-              value={tab}
-              onChange={handleTabChange}
-              centered
-              sx={{ mb: 2 }}
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: '450px',
+          px: 2,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <Paper 
+          sx={{ 
+            p: 5,
+            borderRadius: 4,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+            background: 'rgba(255, 255, 255, 0.98)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.8)',
+            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1)',
+            },
+          }} 
+          elevation={0}
+        >
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              mb: 3,
+              animation: 'fadeInDown 0.6s ease',
+            }}
+          >
+            <Box
+              sx={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                background: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(46, 125, 50, 0.25)',
+                padding: '10px',
+                border: '3px solid #2E7D32',
+              }}
             >
-              <Tab label="Login" />
-              <Tab label="Register" />
-            </Tabs>
+              <img 
+                src={logo} 
+                alt="Barangay 636 Logo" 
+                style={{ 
+                  height: '100%', 
+                  width: '100%',
+                  objectFit: 'contain',
+                }} 
+              />
+            </Box>
+          </Box>
+          <Typography 
+            variant="h5" 
+            gutterBottom 
+            align="center"
+            sx={{
+              color: '#2E7D32',
+              fontWeight: 800,
+              mb: 3,
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase',
+              lineHeight: 1.3,
+            }}
+          >
+            BARANGAY 636 ZONE 64,
+            <br />
+            SANTA MESA MANILA
+          </Typography>
+
+          <Tabs
+            value={tab}
+            onChange={handleTabChange}
+            centered
+            sx={{ 
+              mb: 4,
+              '& .MuiTab-root': {
+                color: '#757575',
+                fontWeight: 600,
+                fontSize: '1rem',
+                textTransform: 'none',
+                minHeight: '48px',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  color: '#2E7D32',
+                },
+              },
+              '& .Mui-selected': {
+                color: '#2E7D32',
+                fontWeight: 700,
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: '#2E7D32',
+                height: '3px',
+                borderRadius: '3px 3px 0 0',
+              },
+            }}
+          >
+            <Tab label="Login" />
+            <Tab label="Register" />
+          </Tabs>
 
             {tab === 0 && (
-              <Box component="form" onSubmit={handleLoginSubmit}>
+              <Box 
+                component="form" 
+                onSubmit={handleLoginSubmit}
+                sx={{
+                  animation: 'fadeIn 0.4s ease',
+                }}
+              >
                 <TextField
                   margin="normal"
                   label="Username"
@@ -143,6 +292,38 @@ const AuthPage = ({ onLogin }) => {
                   onChange={handleLoginChange}
                   fullWidth
                   required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      backgroundColor: '#FAFAFA',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        backgroundColor: '#F5F5F5',
+                      },
+                      '&.Mui-focused': {
+                        backgroundColor: '#FFFFFF',
+                        boxShadow: '0 0 0 3px rgba(46, 125, 50, 0.1)',
+                      },
+                      '& fieldset': {
+                        borderColor: '#E0E0E0',
+                        borderWidth: '1.5px',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#BDBDBD',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#2E7D32',
+                        borderWidth: '2px',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontWeight: 500,
+                      '&.Mui-focused': {
+                        color: '#2E7D32',
+                        fontWeight: 600,
+                      },
+                    },
+                  }}
                 />
                 <TextField
                   margin="normal"
@@ -153,9 +334,51 @@ const AuthPage = ({ onLogin }) => {
                   onChange={handleLoginChange}
                   fullWidth
                   required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      backgroundColor: '#FAFAFA',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        backgroundColor: '#F5F5F5',
+                      },
+                      '&.Mui-focused': {
+                        backgroundColor: '#FFFFFF',
+                        boxShadow: '0 0 0 3px rgba(46, 125, 50, 0.1)',
+                      },
+                      '& fieldset': {
+                        borderColor: '#E0E0E0',
+                        borderWidth: '1.5px',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#BDBDBD',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#2E7D32',
+                        borderWidth: '2px',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontWeight: 500,
+                      '&.Mui-focused': {
+                        color: '#2E7D32',
+                        fontWeight: 600,
+                      },
+                    },
+                  }}
                 />
                 {errorLogin && (
-                  <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                  <Typography 
+                    color="error" 
+                    variant="body2" 
+                    sx={{ 
+                      mt: 2,
+                      p: 1.5,
+                      borderRadius: 2,
+                      backgroundColor: '#FFEBEE',
+                      border: '1px solid #FFCDD2',
+                    }}
+                  >
                     {errorLogin}
                   </Typography>
                 )}
@@ -163,7 +386,26 @@ const AuthPage = ({ onLogin }) => {
                   type="submit"
                   variant="contained"
                   fullWidth
-                  sx={{ mt: 2 }}
+                  sx={{ 
+                    mt: 3,
+                    mb: 2,
+                    background: 'linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(46, 125, 50, 0.4)',
+                    },
+                    py: 1.75,
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    textTransform: 'none',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 12px rgba(46, 125, 50, 0.3)',
+                    transition: 'all 0.3s ease',
+                    '&:active': {
+                      transform: 'translateY(0)',
+                    },
+                  }}
                   disabled={loadingLogin}
                 >
                   {loadingLogin ? 'Logging in...' : 'Login'}
@@ -172,7 +414,13 @@ const AuthPage = ({ onLogin }) => {
             )}
 
             {tab === 1 && (
-              <Box component="form" onSubmit={handleRegisterSubmit}>
+              <Box 
+                component="form" 
+                onSubmit={handleRegisterSubmit}
+                sx={{
+                  animation: 'fadeIn 0.4s ease',
+                }}
+              >
                 <TextField
                   margin="normal"
                   label="Full Name"
@@ -181,6 +429,38 @@ const AuthPage = ({ onLogin }) => {
                   onChange={handleRegisterChange}
                   fullWidth
                   required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      backgroundColor: '#FAFAFA',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        backgroundColor: '#F5F5F5',
+                      },
+                      '&.Mui-focused': {
+                        backgroundColor: '#FFFFFF',
+                        boxShadow: '0 0 0 3px rgba(46, 125, 50, 0.1)',
+                      },
+                      '& fieldset': {
+                        borderColor: '#E0E0E0',
+                        borderWidth: '1.5px',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#BDBDBD',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#2E7D32',
+                        borderWidth: '2px',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontWeight: 500,
+                      '&.Mui-focused': {
+                        color: '#2E7D32',
+                        fontWeight: 600,
+                      },
+                    },
+                  }}
                 />
                 <TextField
                   margin="normal"
@@ -190,6 +470,38 @@ const AuthPage = ({ onLogin }) => {
                   onChange={handleRegisterChange}
                   fullWidth
                   required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      backgroundColor: '#FAFAFA',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        backgroundColor: '#F5F5F5',
+                      },
+                      '&.Mui-focused': {
+                        backgroundColor: '#FFFFFF',
+                        boxShadow: '0 0 0 3px rgba(46, 125, 50, 0.1)',
+                      },
+                      '& fieldset': {
+                        borderColor: '#E0E0E0',
+                        borderWidth: '1.5px',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#BDBDBD',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#2E7D32',
+                        borderWidth: '2px',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontWeight: 500,
+                      '&.Mui-focused': {
+                        color: '#2E7D32',
+                        fontWeight: 600,
+                      },
+                    },
+                  }}
                 />
                 <TextField
                   margin="normal"
@@ -200,6 +512,38 @@ const AuthPage = ({ onLogin }) => {
                   onChange={handleRegisterChange}
                   fullWidth
                   required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      backgroundColor: '#FAFAFA',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        backgroundColor: '#F5F5F5',
+                      },
+                      '&.Mui-focused': {
+                        backgroundColor: '#FFFFFF',
+                        boxShadow: '0 0 0 3px rgba(46, 125, 50, 0.1)',
+                      },
+                      '& fieldset': {
+                        borderColor: '#E0E0E0',
+                        borderWidth: '1.5px',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#BDBDBD',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#2E7D32',
+                        borderWidth: '2px',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontWeight: 500,
+                      '&.Mui-focused': {
+                        color: '#2E7D32',
+                        fontWeight: 600,
+                      },
+                    },
+                  }}
                 />
                 <TextField
                   select
@@ -209,18 +553,71 @@ const AuthPage = ({ onLogin }) => {
                   value={registerForm.role}
                   onChange={handleRegisterChange}
                   fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      backgroundColor: '#FAFAFA',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        backgroundColor: '#F5F5F5',
+                      },
+                      '&.Mui-focused': {
+                        backgroundColor: '#FFFFFF',
+                        boxShadow: '0 0 0 3px rgba(46, 125, 50, 0.1)',
+                      },
+                      '& fieldset': {
+                        borderColor: '#E0E0E0',
+                        borderWidth: '1.5px',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#BDBDBD',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#2E7D32',
+                        borderWidth: '2px',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontWeight: 500,
+                      '&.Mui-focused': {
+                        color: '#2E7D32',
+                        fontWeight: 600,
+                      },
+                    },
+                  }}
                 >
                   <MenuItem value="Admin">Admin</MenuItem>
                   <MenuItem value="Staff">Staff</MenuItem>
                 </TextField>
 
                 {errorRegister && (
-                  <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                  <Typography 
+                    color="error" 
+                    variant="body2" 
+                    sx={{ 
+                      mt: 2,
+                      p: 1.5,
+                      borderRadius: 2,
+                      backgroundColor: '#FFEBEE',
+                      border: '1px solid #FFCDD2',
+                    }}
+                  >
                     {errorRegister}
                   </Typography>
                 )}
                 {successRegister && (
-                  <Typography color="primary" variant="body2" sx={{ mt: 1 }}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      mt: 2,
+                      p: 1.5,
+                      borderRadius: 2,
+                      backgroundColor: '#E8F5E9',
+                      border: '1px solid #C8E6C9',
+                      color: '#2E7D32',
+                      fontWeight: 500,
+                    }}
+                  >
                     {successRegister}
                   </Typography>
                 )}
@@ -229,7 +626,26 @@ const AuthPage = ({ onLogin }) => {
                   type="submit"
                   variant="contained"
                   fullWidth
-                  sx={{ mt: 2 }}
+                  sx={{ 
+                    mt: 3,
+                    mb: 2,
+                    background: 'linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(46, 125, 50, 0.4)',
+                    },
+                    py: 1.75,
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    textTransform: 'none',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 12px rgba(46, 125, 50, 0.3)',
+                    transition: 'all 0.3s ease',
+                    '&:active': {
+                      transform: 'translateY(0)',
+                    },
+                  }}
                   disabled={loadingRegister}
                 >
                   {loadingRegister ? 'Registering...' : 'Register'}
@@ -237,8 +653,7 @@ const AuthPage = ({ onLogin }) => {
               </Box>
             )}
           </Paper>
-        </Grid>
-      </Grid>
+        </Box>
     </Box>
   );
 };

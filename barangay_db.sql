@@ -91,6 +91,7 @@ CREATE TABLE `incidents` (
   `location` varchar(255) DEFAULT NULL,
   `description` text DEFAULT NULL,
   `complainant_id` int(11) DEFAULT NULL,
+  `complainant_name` varchar(255) DEFAULT NULL,
   `respondent_id` int(11) DEFAULT NULL,
   `status` varchar(50) DEFAULT 'Open',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
@@ -100,8 +101,8 @@ CREATE TABLE `incidents` (
 -- Dumping data for table `incidents`
 --
 
-INSERT INTO `incidents` (`id`, `incident_date`, `incident_type`, `location`, `description`, `complainant_id`, `respondent_id`, `status`, `created_at`) VALUES
-(1, '2025-11-13 02:30:00', 'Complaint', 'Malabon', 'Suntukan', 2, 1, 'Under Investigation', '2025-11-13 03:31:33');
+INSERT INTO `incidents` (`id`, `incident_date`, `incident_type`, `location`, `description`, `complainant_id`, `complainant_name`, `respondent_id`, `status`, `created_at`) VALUES
+(1, '2025-11-13 02:30:00', 'Complaint', 'Malabon', 'Suntukan', 2, NULL, 1, 'Under Investigation', '2025-11-13 03:31:33');
 
 -- --------------------------------------------------------
 
@@ -139,9 +140,16 @@ CREATE TABLE `residents` (
   `first_name` varchar(100) NOT NULL,
   `middle_name` varchar(100) DEFAULT NULL,
   `suffix` varchar(20) DEFAULT NULL,
+  `nickname` varchar(50) DEFAULT NULL,
   `sex` enum('Male','Female','Other') NOT NULL,
   `birthdate` date DEFAULT NULL,
-  `civil_status` varchar(50) DEFAULT NULL,
+  `age` int(11) DEFAULT NULL,
+  `civil_status` enum('Single','Married','Widowed') DEFAULT NULL,
+  `employment_status` enum('With work','Without work') DEFAULT NULL,
+  `registered_voter` enum('Yes','No') DEFAULT NULL,
+  `resident_status` enum('Resident','Transferred','Non-resident') DEFAULT 'Resident',
+  `is_senior_citizen` tinyint(1) DEFAULT 0,
+  `is_pwd` tinyint(1) DEFAULT 0,
   `contact_no` varchar(50) DEFAULT NULL,
   `address` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
@@ -151,9 +159,9 @@ CREATE TABLE `residents` (
 -- Dumping data for table `residents`
 --
 
-INSERT INTO `residents` (`id`, `last_name`, `first_name`, `middle_name`, `suffix`, `sex`, `birthdate`, `civil_status`, `contact_no`, `address`, `created_at`) VALUES
-(1, 'San Jose', 'Dhani', 'Ignacio', NULL, 'Male', '1982-01-06', 'Single', '09112345678', 'Blk 14 Lot 19', '2025-11-13 03:28:13'),
-(2, 'Dela Cruz', 'Juan', NULL, NULL, 'Male', '1999-02-06', 'Single', '01998765432', 'Malabon', '2025-11-13 03:28:54');
+INSERT INTO `residents` (`id`, `last_name`, `first_name`, `middle_name`, `suffix`, `nickname`, `sex`, `birthdate`, `age`, `civil_status`, `employment_status`, `registered_voter`, `resident_status`, `is_senior_citizen`, `is_pwd`, `contact_no`, `address`, `created_at`) VALUES
+(1, 'San Jose', 'Dhani', 'Ignacio', NULL, NULL, 'Male', '1982-01-06', 43, 'Single', 'With work', 'Yes', 'Resident', 0, 0, '09112345678', 'Blk 14 Lot 19', '2025-11-13 03:28:13'),
+(2, 'Dela Cruz', 'Juan', NULL, NULL, NULL, 'Male', '1999-02-06', 26, 'Single', 'Without work', 'No', 'Resident', 0, 0, '01998765432', 'Malabon', '2025-11-13 03:28:54');
 
 -- --------------------------------------------------------
 
@@ -197,6 +205,24 @@ CREATE TABLE `service_beneficiaries` (
 
 INSERT INTO `service_beneficiaries` (`id`, `service_id`, `resident_id`, `notes`, `created_at`) VALUES
 (1, 1, 2, '1', '2025-11-13 03:32:16');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `certificates`
+--
+
+CREATE TABLE `certificates` (
+  `id` int(11) NOT NULL,
+  `resident_id` int(11) NOT NULL,
+  `certificate_type` varchar(100) NOT NULL,
+  `purpose` text DEFAULT NULL,
+  `issue_date` date NOT NULL,
+  `place_issued` varchar(255) DEFAULT NULL,
+  `or_number` varchar(50) DEFAULT NULL,
+  `amount` decimal(10,2) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -279,6 +305,13 @@ ALTER TABLE `service_beneficiaries`
   ADD KEY `resident_id` (`resident_id`);
 
 --
+-- Indexes for table `certificates`
+--
+ALTER TABLE `certificates`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `resident_id` (`resident_id`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -338,6 +371,12 @@ ALTER TABLE `service_beneficiaries`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `certificates`
+--
+ALTER TABLE `certificates`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
@@ -367,6 +406,12 @@ ALTER TABLE `incidents`
 ALTER TABLE `service_beneficiaries`
   ADD CONSTRAINT `service_beneficiaries_ibfk_1` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `service_beneficiaries_ibfk_2` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `certificates`
+--
+ALTER TABLE `certificates`
+  ADD CONSTRAINT `certificates_ibfk_1` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

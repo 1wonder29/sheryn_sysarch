@@ -24,6 +24,9 @@ import {
   IconButton,
   InputAdornment,
   TablePagination,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -47,7 +50,9 @@ const initialForm = {
   incident_type: 'Complaint',
   location: '',
   description: '',
+  complainant_type: 'resident', // 'resident' or 'manual'
   complainant_id: '',
+  complainant_name: '',
   respondent_id: '',
   status: 'Open',
 };
@@ -123,9 +128,17 @@ const IncidentsPage = () => {
       return;
     }
 
+    // Prepare data - only send complainant_id OR complainant_name, not both
+    const submitData = {
+      ...form,
+      complainant_id: form.complainant_type === 'resident' ? form.complainant_id : null,
+      complainant_name: form.complainant_type === 'manual' ? form.complainant_name : null,
+    };
+    delete submitData.complainant_type; // Remove the type field before sending
+
     try {
       setSaving(true);
-      await api.post('/incidents', form);
+      await api.post('/incidents', submitData);
       setForm(initialForm);
       await fetchIncidents();
     } catch (err) {
@@ -140,6 +153,16 @@ const IncidentsPage = () => {
     const r = residents.find((x) => x.id === id);
     if (!r) return '';
     return `${r.last_name}, ${r.first_name}`;
+  };
+
+  const getComplainantDisplay = (incident) => {
+    if (incident.complainant_id) {
+      return residentName(incident.complainant_id);
+    }
+    if (incident.complainant_name) {
+      return incident.complainant_name;
+    }
+    return '';
   };
 
   const formatDateTime = (value) => {
@@ -159,7 +182,7 @@ const IncidentsPage = () => {
     const matchStatus = statusFilter === 'All' || i.status === statusFilter;
 
     // searchType/Location/Names
-    const complainant = residentName(i.complainant_id);
+    const complainant = getComplainantDisplay(i);
     const respondent = residentName(i.respondent_id);
     const haystack = (
       `${i.incident_type || ''} ${i.location || ''} ${complainant} ${respondent}`
@@ -193,6 +216,13 @@ const IncidentsPage = () => {
       incident_date: incident.incident_date
         ? incident.incident_date.slice(0, 16)
         : '',
+      complainant_type: incident.complainant_id ? 'resident' : (incident.complainant_name ? 'manual' : 'resident'),
+      complainant_id: incident.complainant_id || '',
+      complainant_name: incident.complainant_name || '',
+      respondent_id: incident.respondent_id || '',
+      status: incident.status || 'Open',
+      location: incident.location || '',
+      description: incident.description || '',
     });
     setEditOpen(true);
   };
@@ -209,9 +239,17 @@ const IncidentsPage = () => {
       return;
     }
 
+    // Prepare data - only send complainant_id OR complainant_name, not both
+    const submitData = {
+      ...editData,
+      complainant_id: editData.complainant_type === 'resident' ? editData.complainant_id : null,
+      complainant_name: editData.complainant_type === 'manual' ? editData.complainant_name : null,
+    };
+    delete submitData.complainant_type; // Remove the type field before sending
+
     try {
       setSavingEdit(true);
-      await api.put(`/incidents/${editData.id}`, editData);
+      await api.put(`/incidents/${editData.id}`, submitData);
       setEditOpen(false);
       setEditData(null);
       await fetchIncidents();
@@ -307,26 +345,70 @@ const IncidentsPage = () => {
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Complainant</InputLabel>
-                <Select
-                  label="Complainant"
-                  name="complainant_id"
-                  value={form.complainant_id}
-                  onChange={handleChange}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" gutterBottom>
+                Complainant (Kung sino ang nagreklamo)
+              </Typography>
+              <FormControl component="fieldset" sx={{ mb: 2 }}>
+                <RadioGroup
+                  row
+                  name="complainant_type"
+                  value={form.complainant_type}
+                  onChange={(e) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      complainant_type: e.target.value,
+                      complainant_id: e.target.value === 'resident' ? prev.complainant_id : '',
+                      complainant_name: e.target.value === 'manual' ? prev.complainant_name : '',
+                    }));
+                  }}
                 >
-                  <MenuItem value="">
-                    <em>None</em>
-                  </MenuItem>
-                  {residents.map((r) => (
-                    <MenuItem key={r.id} value={r.id}>
-                      {r.last_name}, {r.first_name}
-                    </MenuItem>
-                  ))}
-                </Select>
+                  <FormControlLabel
+                    value="resident"
+                    control={<Radio />}
+                    label="Link to Existing Resident"
+                  />
+                  <FormControlLabel
+                    value="manual"
+                    control={<Radio />}
+                    label="Enter Name Manually"
+                  />
+                </RadioGroup>
               </FormControl>
             </Grid>
+            {form.complainant_type === 'resident' ? (
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Select Resident</InputLabel>
+                  <Select
+                    label="Select Resident"
+                    name="complainant_id"
+                    value={form.complainant_id}
+                    onChange={handleChange}
+                  >
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {residents.map((r) => (
+                      <MenuItem key={r.id} value={r.id}>
+                        {r.last_name}, {r.first_name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            ) : (
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Complainant Name"
+                  name="complainant_name"
+                  value={form.complainant_name}
+                  onChange={handleChange}
+                  fullWidth
+                  placeholder="Enter complainant name"
+                />
+              </Grid>
+            )}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
                 <InputLabel>Respondent</InputLabel>
@@ -476,7 +558,7 @@ const IncidentsPage = () => {
                   <TableCell>{formatDateTime(i.incident_date)}</TableCell>
                   <TableCell>{i.incident_type}</TableCell>
                   <TableCell>{i.location || ''}</TableCell>
-                  <TableCell>{residentName(i.complainant_id)}</TableCell>
+                  <TableCell>{getComplainantDisplay(i)}</TableCell>
                   <TableCell>{residentName(i.respondent_id)}</TableCell>
                   <TableCell>{i.status}</TableCell>
                   <TableCell align="center">
@@ -530,7 +612,7 @@ const IncidentsPage = () => {
                   type="datetime-local"
                   label="Date & Time"
                   name="incident_date"
-                  value={editData.incident_date || ''}
+                  value={editData.incident_date ?? ''}
                   onChange={handleEditChange}
                   fullWidth
                   InputLabelProps={{ shrink: true }}
@@ -542,7 +624,7 @@ const IncidentsPage = () => {
                   <Select
                     label="Incident Type"
                     name="incident_type"
-                    value={editData.incident_type || ''}
+                    value={editData.incident_type ?? ''}
                     onChange={handleEditChange}
                   >
                     {INCIDENT_TYPES.map((type) => (
@@ -557,39 +639,83 @@ const IncidentsPage = () => {
                 <TextField
                   label="Location"
                   name="location"
-                  value={editData.location || ''}
+                  value={editData.location ?? ''}
                   onChange={handleEditChange}
                   fullWidth
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Complainant</InputLabel>
-                  <Select
-                    label="Complainant"
-                    name="complainant_id"
-                    value={editData.complainant_id || ''}
-                    onChange={handleEditChange}
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Complainant (Kung sino ang nagreklamo)
+                </Typography>
+                <FormControl component="fieldset" sx={{ mb: 2 }}>
+                  <RadioGroup
+                    row
+                    name="complainant_type"
+                    value={editData.complainant_type ?? (editData.complainant_id ? 'resident' : 'manual')}
+                    onChange={(e) => {
+                      setEditData((prev) => ({
+                        ...prev,
+                        complainant_type: e.target.value,
+                        complainant_id: e.target.value === 'resident' ? (prev.complainant_id ?? '') : '',
+                        complainant_name: e.target.value === 'manual' ? (prev.complainant_name ?? '') : '',
+                      }));
+                    }}
                   >
-                    <MenuItem value="">
-                      <em>None</em>
-                    </MenuItem>
-                    {residents.map((r) => (
-                      <MenuItem key={r.id} value={r.id}>
-                        {r.last_name}, {r.first_name}
-                      </MenuItem>
-                    ))}
-                  </Select>
+                    <FormControlLabel
+                      value="resident"
+                      control={<Radio />}
+                      label="Link to Existing Resident"
+                    />
+                    <FormControlLabel
+                      value="manual"
+                      control={<Radio />}
+                      label="Enter Name Manually"
+                    />
+                  </RadioGroup>
                 </FormControl>
               </Grid>
+              {(editData.complainant_type ?? (editData.complainant_id ? 'resident' : 'manual')) === 'resident' ? (
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Select Resident</InputLabel>
+                    <Select
+                      label="Select Resident"
+                      name="complainant_id"
+                      value={editData.complainant_id ?? ''}
+                      onChange={handleEditChange}
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {residents.map((r) => (
+                        <MenuItem key={r.id} value={r.id}>
+                          {r.last_name}, {r.first_name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              ) : (
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    label="Complainant Name"
+                    name="complainant_name"
+                    value={editData.complainant_name ?? ''}
+                    onChange={handleEditChange}
+                    fullWidth
+                    placeholder="Enter complainant name"
+                  />
+                </Grid>
+              )}
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth>
                   <InputLabel>Respondent</InputLabel>
                   <Select
                     label="Respondent"
                     name="respondent_id"
-                    value={editData.respondent_id || ''}
+                    value={editData.respondent_id ?? ''}
                     onChange={handleEditChange}
                   >
                     <MenuItem value="">
@@ -610,7 +736,7 @@ const IncidentsPage = () => {
                   <Select
                     label="Status"
                     name="status"
-                    value={editData.status || ''}
+                    value={editData.status ?? 'Open'}
                     onChange={handleEditChange}
                   >
                     {STATUS_OPTIONS.map((s) => (
@@ -626,7 +752,7 @@ const IncidentsPage = () => {
                 <TextField
                   label="Description"
                   name="description"
-                  value={editData.description || ''}
+                  value={editData.description ?? ''}
                   onChange={handleEditChange}
                   fullWidth
                   multiline
