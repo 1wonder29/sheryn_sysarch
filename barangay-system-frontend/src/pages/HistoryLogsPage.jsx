@@ -136,6 +136,47 @@ const HistoryLogsPage = () => {
     return '📝';
   };
 
+  // Group logs by date
+  const groupLogsByDate = (logs) => {
+    const grouped = {};
+    
+    logs.forEach((log) => {
+      if (!log.created_at) return;
+      
+      const date = new Date(log.created_at);
+      const dateKey = date.toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(log);
+    });
+    
+    // Sort logs within each date (newest first)
+    Object.keys(grouped).forEach((dateKey) => {
+      grouped[dateKey].sort((a, b) => {
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
+        return dateB - dateA; // Newest first
+      });
+    });
+    
+    // Sort dates (newest first)
+    const sortedDates = Object.keys(grouped).sort((a, b) => {
+      const dateA = new Date(a);
+      const dateB = new Date(b);
+      return dateB - dateA; // Newest first
+    });
+    
+    return { grouped, sortedDates };
+  };
+
+  const { grouped, sortedDates } = groupLogsByDate(logs);
+
   return (
     <Box>
       {/* Header Section */}
@@ -176,114 +217,146 @@ const HistoryLogsPage = () => {
         </Paper>
       ) : (
         <>
-          {/* Logs Display */}
-          <Grid container spacing={2}>
-            {logs.map((log) => (
-              <Grid item xs={12} key={log.id}>
-                <Card
-                  elevation={2}
+          {/* Logs Display - Grouped by Date */}
+          <Box>
+            {sortedDates.map((dateKey) => (
+              <Box key={dateKey} sx={{ mb: 4 }}>
+                {/* Date Header */}
+                <Box
                   sx={{
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      elevation: 4,
-                      transform: 'translateY(-2px)',
-                    },
-                    borderLeft: '4px solid',
-                    borderLeftColor: 'primary.main',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    mb: 2,
+                    pb: 1,
+                    borderBottom: '2px solid',
+                    borderColor: 'primary.main',
                   }}
                 >
-                  <CardContent>
-                    <Stack spacing={2}>
-                      {/* Action Description */}
-                      <Box>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 500,
-                            fontSize: '1.1rem',
-                            mb: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                          }}
-                        >
-                          <span style={{ fontSize: '1.3rem' }}>
-                            {getActionIcon(log.action)}
-                          </span>
-                          {log.action}
-                        </Typography>
-                      </Box>
+                  <AccessTimeIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700,
+                      color: 'primary.main',
+                      fontSize: '1.5rem',
+                    }}
+                  >
+                    {dateKey}
+                  </Typography>
+                  <Chip
+                    label={`${grouped[dateKey].length} ${grouped[dateKey].length === 1 ? 'action' : 'actions'}`}
+                    color="primary"
+                    size="small"
+                    sx={{ ml: 'auto' }}
+                  />
+                </Box>
 
-                      <Divider />
-
-                      {/* User and Role Info */}
-                      <Box
+                {/* Logs for this date */}
+                <Grid container spacing={2}>
+                  {grouped[dateKey].map((log) => (
+                    <Grid item xs={12} key={log.id}>
+                      <Card
+                        elevation={2}
                         sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 2,
-                          flexWrap: 'wrap',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            elevation: 4,
+                            transform: 'translateY(-2px)',
+                          },
+                          borderLeft: '4px solid',
+                          borderLeftColor: 'primary.main',
                         }}
                       >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Avatar
-                            sx={{
-                              width: 36,
-                              height: 36,
-                              bgcolor: 'primary.main',
-                            }}
-                          >
-                            <PersonIcon fontSize="small" />
-                          </Avatar>
-                          <Box>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 600, color: 'text.primary' }}
-                            >
-                              {log.user_name || 'System'}
-                            </Typography>
-                            {log.user_role && (
-                              <Chip
-                                label={log.user_role}
-                                color={getRoleColor(log.user_role)}
-                                size="small"
-                                sx={{ mt: 0.5, height: 20, fontSize: '0.7rem' }}
-                              />
-                            )}
-                          </Box>
-                        </Box>
+                        <CardContent>
+                          <Stack spacing={2}>
+                            {/* Action Description */}
+                            <Box>
+                              <Typography
+                                variant="h6"
+                                sx={{
+                                  fontWeight: 500,
+                                  fontSize: '1.1rem',
+                                  mb: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                }}
+                              >
+                                <span style={{ fontSize: '1.3rem' }}>
+                                  {getActionIcon(log.action)}
+                                </span>
+                                {log.action}
+                              </Typography>
+                            </Box>
 
-                        {/* Date and Time */}
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            ml: 'auto',
-                            color: 'text.secondary',
-                          }}
-                        >
-                          <AccessTimeIcon fontSize="small" />
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                              {formatDate(log.created_at)}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ fontSize: '0.75rem' }}
+                            <Divider />
+
+                            {/* User and Role Info */}
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 2,
+                                flexWrap: 'wrap',
+                              }}
                             >
-                              {formatTime(log.created_at)}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Box>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Avatar
+                                  sx={{
+                                    width: 36,
+                                    height: 36,
+                                    bgcolor: 'primary.main',
+                                  }}
+                                >
+                                  <PersonIcon fontSize="small" />
+                                </Avatar>
+                                <Box>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ fontWeight: 600, color: 'text.primary' }}
+                                  >
+                                    {log.user_name || 'System'}
+                                  </Typography>
+                                  {log.user_role && (
+                                    <Chip
+                                      label={log.user_role}
+                                      color={getRoleColor(log.user_role)}
+                                      size="small"
+                                      sx={{ mt: 0.5, height: 20, fontSize: '0.7rem' }}
+                                    />
+                                  )}
+                                </Box>
+                              </Box>
+
+                              {/* Time only (date is in header) */}
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                  ml: 'auto',
+                                  color: 'text.secondary',
+                                }}
+                              >
+                                <AccessTimeIcon fontSize="small" />
+                                <Typography
+                                  variant="body2"
+                                  sx={{ fontWeight: 500 }}
+                                >
+                                  {formatTime(log.created_at)}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
 
           {/* Pagination */}
           {logs.length > 0 && (

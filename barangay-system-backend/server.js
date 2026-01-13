@@ -993,6 +993,33 @@ app.put('/api/incidents/:id', verifyToken, async (req, res) => {
   }
 });
 
+// DELETE /api/incidents/:id (protected)
+app.delete('/api/incidents/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if incident exists
+    const incidents = await query('SELECT * FROM incidents WHERE id = ?', [id]);
+    if (incidents.length === 0) {
+      return res.status(404).json({ message: 'Incident not found' });
+    }
+
+    const incident = incidents[0];
+
+    // Delete the incident
+    await query('DELETE FROM incidents WHERE id = ?', [id]);
+    
+    // Log the action
+    const incidentDesc = incident.incident_type || 'incident';
+    await createHistoryLog(req, `deleted ${incidentDesc} incident #${id}`);
+
+    res.json({ message: 'Incident deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting incident:', err);
+    res.status(500).json({ message: 'Error deleting incident' });
+  }
+});
+
 // ===================== SERVICES =====================
 
 // GET /api/services
@@ -1067,6 +1094,44 @@ app.put('/api/services/:id', verifyToken, async (req, res) => {
   }
 });
 
+// DELETE /api/services/:id (protected)
+app.delete('/api/services/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if service exists
+    const services = await query('SELECT * FROM services WHERE id = ?', [id]);
+    if (services.length === 0) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+
+    const service = services[0];
+
+    // Check if service has beneficiaries
+    const beneficiaries = await query(
+      'SELECT COUNT(*) as count FROM service_beneficiaries WHERE service_id = ?',
+      [id]
+    );
+
+    if (beneficiaries[0].count > 0) {
+      return res.status(400).json({ 
+        message: 'Cannot delete service. It has beneficiaries. Please remove them first.' 
+      });
+    }
+
+    // Delete the service
+    await query('DELETE FROM services WHERE id = ?', [id]);
+    
+    // Log the action
+    await createHistoryLog(req, `deleted service: ${service.service_name}`);
+
+    res.json({ message: 'Service deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting service:', err);
+    res.status(500).json({ message: 'Error deleting service' });
+  }
+});
+
 // GET /api/services/:id/beneficiaries
 app.get('/api/services/:id/beneficiaries', async (req, res) => {
   try {
@@ -1128,6 +1193,46 @@ app.post('/api/services/:id/beneficiaries', verifyToken, async (req, res) => {
   } catch (err) {
     console.error('Error adding beneficiary:', err);
     res.status(500).json({ message: 'Error adding beneficiary' });
+  }
+});
+
+// DELETE /api/services/:id/beneficiaries/:beneficiaryId (protected)
+app.delete('/api/services/:id/beneficiaries/:beneficiaryId', verifyToken, async (req, res) => {
+  try {
+    const serviceId = req.params.id;
+    const beneficiaryId = req.params.beneficiaryId;
+
+    // Check if beneficiary exists and belongs to this service
+    const beneficiaries = await query(
+      `SELECT sb.*, r.first_name, r.last_name
+       FROM service_beneficiaries sb
+       JOIN residents r ON r.id = sb.resident_id
+       WHERE sb.id = ? AND sb.service_id = ?`,
+      [beneficiaryId, serviceId]
+    );
+
+    if (beneficiaries.length === 0) {
+      return res.status(404).json({ 
+        message: 'Beneficiary not found or does not belong to this service.' 
+      });
+    }
+
+    const beneficiary = beneficiaries[0];
+
+    // Delete the beneficiary
+    await query(
+      'DELETE FROM service_beneficiaries WHERE id = ? AND service_id = ?',
+      [beneficiaryId, serviceId]
+    );
+
+    // Log the action
+    const residentName = `${beneficiary.first_name} ${beneficiary.last_name}`;
+    await createHistoryLog(req, `removed ${residentName} as beneficiary from service`);
+
+    res.json({ message: 'Beneficiary removed successfully' });
+  } catch (err) {
+    console.error('Error removing beneficiary:', err);
+    res.status(500).json({ message: 'Error removing beneficiary' });
   }
 });
 

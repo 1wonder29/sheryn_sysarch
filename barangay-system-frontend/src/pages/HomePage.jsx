@@ -9,7 +9,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import PhoneIcon from '@mui/icons-material/Phone';
 import api from '../api';
-import backgroundImage from '../assets/pic.jpg';
+import backgroundImage from '../assets/logo.jpg';
 
 const API_ROOT = 'http://localhost:5000';
 
