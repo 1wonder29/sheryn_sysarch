@@ -23,8 +23,12 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  InputAdornment,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ClearIcon from '@mui/icons-material/Clear';
+import AddIcon from '@mui/icons-material/Add';
 import api from '../api';
 
 const initialHouseholdForm = {
@@ -50,6 +54,8 @@ const HouseholdsPage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [quickAddForm, setQuickAddForm] = useState(initialHouseholdForm);
 
   const fetchHouseholds = async () => {
     try {
@@ -187,6 +193,56 @@ const HouseholdsPage = () => {
     setEditData(null);
   };
 
+  const handleDeleteHousehold = async (household) => {
+    if (!window.confirm(`Are you sure you want to delete household "${household.household_name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/households/${household.id}`);
+      fetchHouseholds();
+      // Clear selected household if it was deleted
+      if (selectedHousehold && selectedHousehold.id === household.id) {
+        setSelectedHousehold(null);
+        setMembers([]);
+      }
+      alert('Household deleted successfully!');
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error deleting household');
+    }
+  };
+
+  const handleQuickAddClick = () => {
+    setQuickAddForm(initialHouseholdForm);
+    setAddDialogOpen(true);
+  };
+
+  const handleQuickAddChange = (e) => {
+    const { name, value } = e.target;
+    setQuickAddForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleQuickAddSave = async () => {
+    try {
+      const res = await api.post('/households', quickAddForm);
+      setAddDialogOpen(false);
+      setQuickAddForm(initialHouseholdForm);
+      fetchHouseholds();
+      setSelectedHousehold(res.data);
+      fetchMembers(res.data.id);
+      alert('Household added successfully!');
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error creating household');
+    }
+  };
+
+  const handleQuickAddClose = () => {
+    setAddDialogOpen(false);
+    setQuickAddForm(initialHouseholdForm);
+  };
+
   return (
     <Box>
       <Typography variant="h5" gutterBottom>
@@ -248,7 +304,18 @@ const HouseholdsPage = () => {
                 mb: 2,
               }}
             >
-              <Typography variant="h6">Household List</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6">Household List</Typography>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={handleQuickAddClick}
+                  color="primary"
+                >
+                  Add Household
+                </Button>
+              </Box>
               <TextField
                 size="small"
                 label="Search (household / address)"
@@ -298,12 +365,24 @@ const HouseholdsPage = () => {
                       <TableCell>{h.purok || ''}</TableCell>
                       <TableCell>{h.member_count}</TableCell>
                       <TableCell align="center">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEditClick(h)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
+                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditClick(h)}
+                            color="primary"
+                            title="Edit Household"
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteHousehold(h)}
+                            color="error"
+                            title="Delete Household"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                       <TableCell align="center">
                         <Button
@@ -417,9 +496,22 @@ const HouseholdsPage = () => {
                 sx={{ mb: 2 }}
                 label="Household Name"
                 name="household_name"
-                value={editData.household_name}
+                value={editData.household_name || ''}
                 onChange={handleEditChange}
                 fullWidth
+                InputProps={{
+                  endAdornment: editData.household_name && (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEditChange({ target: { name: 'household_name', value: '' } })}
+                        edge="end"
+                      >
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
               <TextField
                 sx={{ mb: 2 }}
@@ -447,6 +539,50 @@ const HouseholdsPage = () => {
             disabled={savingEdit}
           >
             {savingEdit ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Household Dialog */}
+      <Dialog open={addDialogOpen} onClose={handleQuickAddClose}>
+        <DialogTitle>Add New Household</DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ mt: 1 }}>
+            <TextField
+              sx={{ mb: 2 }}
+              label="Household Name"
+              name="household_name"
+              value={quickAddForm.household_name}
+              onChange={handleQuickAddChange}
+              fullWidth
+              required
+            />
+            <TextField
+              sx={{ mb: 2 }}
+              label="Address"
+              name="address"
+              value={quickAddForm.address}
+              onChange={handleQuickAddChange}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Purok"
+              name="purok"
+              value={quickAddForm.purok}
+              onChange={handleQuickAddChange}
+              fullWidth
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleQuickAddClose}>Cancel</Button>
+          <Button
+            onClick={handleQuickAddSave}
+            variant="contained"
+            disabled={!quickAddForm.household_name || !quickAddForm.address}
+          >
+            Add
           </Button>
         </DialogActions>
       </Dialog>

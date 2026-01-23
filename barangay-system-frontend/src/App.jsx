@@ -219,24 +219,26 @@ const renderPage = () => {
                 minWidth: 'auto',
                 px: 1.5,
                 py: 1,
-                borderRadius: 2,
+                borderRadius: 0,
                 textTransform: 'none',
                 fontWeight: page === 'home' ? 700 : 500,
                 fontSize: '0.9rem',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                ...(page === 'home' ? {
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-                    transform: 'translateY(-2px)',
-                  },
-                } : {
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                    transform: 'translateY(-2px)',
-                  },
-                }),
+                ...(page === 'home'
+                  ? {
+                      backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.35)',
+                        transform: 'translateY(-2px)',
+                      },
+                    }
+                  : {
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                        transform: 'translateY(-2px)',
+                      },
+                    }),
               }}
             >
               Home
@@ -249,24 +251,26 @@ const renderPage = () => {
                 minWidth: 'auto',
                 px: 1.5,
                 py: 1,
-                borderRadius: 2,
+                borderRadius: 0,
                 textTransform: 'none',
                 fontWeight: page === 'household-residents' ? 700 : 500,
                 fontSize: '0.9rem',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                ...(page === 'household-residents' ? {
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-                    transform: 'translateY(-2px)',
-                  },
-                } : {
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                    transform: 'translateY(-2px)',
-                  },
-                }),
+                ...(page === 'household-residents'
+                  ? {
+                      backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.35)',
+                        transform: 'translateY(-2px)',
+                      },
+                    }
+                  : {
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                        transform: 'translateY(-2px)',
+                      },
+                    }),
               }}
             >
               Household & Residents
@@ -279,7 +283,7 @@ const renderPage = () => {
                 minWidth: 'auto',
                 px: 1.5,
                 py: 1,
-                borderRadius: 2,
+                borderRadius: 0,
                 textTransform: 'none',
                 fontWeight: page === 'incidents' ? 700 : 500,
                 fontSize: '0.9rem',
@@ -309,7 +313,7 @@ const renderPage = () => {
                 minWidth: 'auto',
                 px: 1.5,
                 py: 1,
-                borderRadius: 2,
+                borderRadius: 0,
                 textTransform: 'none',
                 fontWeight: page === 'services' ? 700 : 500,
                 fontSize: '0.9rem',
@@ -339,7 +343,7 @@ const renderPage = () => {
                 minWidth: 'auto',
                 px: 1.5,
                 py: 1,
-                borderRadius: 2,
+                borderRadius: 0,
                 textTransform: 'none',
                 fontWeight: page === 'certificates' ? 700 : 500,
                 fontSize: '0.9rem',
@@ -369,7 +373,7 @@ const renderPage = () => {
                 minWidth: 'auto',
                 px: 1.5,
                 py: 1,
-                borderRadius: 2,
+                borderRadius: 0,
                 textTransform: 'none',
                 fontWeight: page === 'officials' ? 700 : 500,
                 fontSize: '0.9rem',
@@ -399,7 +403,7 @@ const renderPage = () => {
                 minWidth: 'auto',
                 px: 1.5,
                 py: 1,
-                borderRadius: 2,
+                borderRadius: 0,
                 textTransform: 'none',
                 fontWeight: page === 'history-logs' ? 700 : 500,
                 fontSize: '0.9rem',
@@ -429,7 +433,7 @@ const renderPage = () => {
                 minWidth: 'auto',
                 px: 1.5,
                 py: 1,
-                borderRadius: 2,
+                borderRadius: 0,
                 textTransform: 'none',
                 fontWeight: page === 'settings' ? 700 : 500,
                 fontSize: '0.9rem',
@@ -486,7 +490,7 @@ const renderPage = () => {
                 minWidth: 'auto',
                 px: 1.5,
                 py: 1,
-                borderRadius: 2,
+                borderRadius: 0,
                 textTransform: 'none',
                 fontWeight: 600,
                 fontSize: '0.9rem',

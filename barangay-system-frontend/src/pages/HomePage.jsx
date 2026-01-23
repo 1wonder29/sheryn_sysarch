@@ -242,7 +242,7 @@ const HomePage = () => {
         </Box>
       </Box>
 
-      {/* Right Section - Green-Tinted Photographic Panel (60%) */}
+      {/* Right Section - Photographic Panel (60%) */}
       <Box
         sx={{
           width: { xs: '100%', md: '60%' },
@@ -252,7 +252,7 @@ const HomePage = () => {
           overflow: 'hidden',
         }}
       >
-        {/* Background Image with Green Overlay */}
+        {/* Background Image */}
         <Box
           sx={{
             position: 'absolute',
@@ -279,6 +279,7 @@ const HomePage = () => {
               e.target.style.opacity = '1';
             }}
           />
+          {/* Very subtle green overlay to keep branding but let the photo show clearly */}
           <Box
             sx={{
               position: 'absolute',
@@ -286,160 +287,15 @@ const HomePage = () => {
               left: 0,
               width: '100%',
               height: '100%',
-              background: 'linear-gradient(to bottom, rgba(41, 96, 65, 0.3), rgba(41, 96, 65, 0.5))',
+              background:
+                'linear-gradient(to bottom, rgba(41, 96, 65, 0.12), rgba(41, 96, 65, 0.2))',
               zIndex: 1,
             }}
           />
         </Box>
 
-        {/* Group Photo Section - Positioned at bottom */}
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: { xs: 1.5, md: 2 },
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'flex-end',
-            minHeight: '250px',
-            zIndex: 2,
-            background: 'linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent)',
-          }}
-        >
-          {loading ? (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: '200px',
-              }}
-            >
-              <CircularProgress 
-                sx={{ 
-                  color: '#FFFFFF',
-                  '& .MuiCircularProgress-circle': {
-                    strokeLinecap: 'round',
-                  },
-                }} 
-              />
-            </Box>
-          ) : officialsWithPictures.length > 0 ? (
-            <Box
-              sx={{
-                width: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 1.5,
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  gap: { xs: 0.3, md: 0.5 },
-                  maxWidth: '95%',
-                  flexWrap: 'wrap',
-                  padding: 1,
-                }}
-              >
-                {officialsWithPictures.slice(0, 8).map((official, index) => (
-                  <Box
-                    key={official.id}
-                    sx={{
-                      width: { xs: 70, sm: 80, md: 90 },
-                      height: { xs: 110, sm: 125, md: 140 },
-                      borderRadius: 1.5,
-                      overflow: 'hidden',
-                      border: '2px solid rgba(255, 255, 255, 0.5)',
-                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      cursor: 'pointer',
-                      animation: `fadeInUp 0.6s ease ${index * 0.1}s both`,
-                      '&:hover': {
-                        transform: 'translateY(-8px) scale(1.05)',
-                        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(255, 255, 255, 0.3)',
-                        borderColor: 'rgba(255, 255, 255, 0.8)',
-                      },
-                      '@keyframes fadeInUp': {
-                        from: {
-                          opacity: 0,
-                          transform: 'translateY(20px)',
-                        },
-                        to: {
-                          opacity: 1,
-                          transform: 'translateY(0)',
-                        },
-                      },
-                    }}
-                  >
-                    <img
-                      src={`${API_ROOT}${official.picture_path}`}
-                      alt={official.full_name}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        transition: 'transform 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
-                    />
-                  </Box>
-                ))}
-              </Box>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: '#FFFFFF',
-                  fontWeight: 600,
-                  fontSize: { xs: '0.85rem', md: '0.95rem' },
-                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 0, 0, 0.5)',
-                  alignSelf: 'flex-start',
-                  ml: { xs: 1.5, md: 2 },
-                  mt: 0.5,
-                  letterSpacing: '0.5px',
-                }}
-              >
-                Barangay Officials
-              </Typography>
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: '200px',
-                color: '#FFFFFF',
-                backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                padding: 3,
-                borderRadius: 2,
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-              }}
-            >
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  textAlign: 'center',
-                  fontWeight: 500,
-                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.7)',
-                }}
-              >
-                Barangay Officials
-              </Typography>
-            </Box>
-          )}
-        </Box>
+        {/* No overlay content here now – the composite photo (seal + officials)
+            should be saved as src/assets/logo.jpg so it fills this area cleanly. */}
       </Box>
     </Box>
   );

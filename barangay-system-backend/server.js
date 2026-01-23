@@ -124,6 +124,24 @@ function verifyToken(req, res, next) {
   }
 }
 
+// ===== Middleware: require role =====
+function requireRole(allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
+    const userRole = req.user.role;
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({ 
+        message: `Access denied. Required role: ${allowedRoles.join(' or ')}` 
+      });
+    }
+    
+    next();
+  };
+}
+
 // ===================== AUTH =====================
 
 // POST /api/auth/register
@@ -416,6 +434,47 @@ app.put('/api/residents/:id', verifyToken, async (req, res) => {
   }
 });
 
+// DELETE /api/residents/:id - delete (protected - Admin and Staff only)
+app.delete('/api/residents/:id', verifyToken, requireRole(['Admin', 'Staff']), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if resident exists
+    const residents = await query('SELECT * FROM residents WHERE id = ?', [id]);
+    if (residents.length === 0) {
+      return res.status(404).json({ message: 'Resident not found' });
+    }
+    const resident = residents[0];
+
+    // Check if resident is linked to incidents (no ON DELETE CASCADE there)
+    const incidentLinks = await query(
+      `SELECT COUNT(*) as count
+       FROM incidents
+       WHERE complainant_id = ? OR respondent_id = ?`,
+      [id, id]
+    );
+
+    if (incidentLinks[0].count > 0) {
+      return res.status(400).json({
+        message:
+          'Cannot delete resident. They are linked to one or more incidents. Please update or remove those incidents first.',
+      });
+    }
+
+    // Delete resident (CASCADE will clean up household_members, certificates, beneficiaries, etc.)
+    await query('DELETE FROM residents WHERE id = ?', [id]);
+
+    // Log the action
+    const residentName = `${resident.first_name} ${resident.middle_name ? resident.middle_name.charAt(0) + '.' : ''} ${resident.last_name}`.trim();
+    await createHistoryLog(req, `deleted resident: ${residentName}`);
+
+    res.json({ message: 'Resident deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting resident:', err);
+    res.status(500).json({ message: 'Error deleting resident' });
+  }
+});
+
 // ===================== HOUSEHOLDS =====================
 
 // GET /api/households
@@ -436,8 +495,8 @@ app.get('/api/households', async (req, res) => {
   }
 });
 
-// POST /api/households (protected)
-app.post('/api/households', verifyToken, async (req, res) => {
+// POST /api/households (protected - Admin and Staff only)
+app.post('/api/households', verifyToken, requireRole(['Admin', 'Staff']), async (req, res) => {
   try {
     const { household_name, address, purok, num_members } = req.body;
 
@@ -486,16 +545,16 @@ app.post('/api/households', verifyToken, async (req, res) => {
   }
 });
 
-// PUT /api/households/:id (protected)
-app.put('/api/households/:id', verifyToken, async (req, res) => {
+// PUT /api/households/:id (protected - Admin and Staff only)
+app.put('/api/households/:id', verifyToken, requireRole(['Admin', 'Staff']), async (req, res) => {
   try {
     const { id } = req.params;
     const { household_name, address, purok, num_members } = req.body;
 
-    // Validation
-    if (!household_name || !address) {
+    // Validation - address is required, household_name can be empty
+    if (!address) {
       return res.status(400).json({ 
-        message: 'household_name and address are required.' 
+        message: 'address is required.' 
       });
     }
 
@@ -521,7 +580,7 @@ app.put('/api/households/:id', verifyToken, async (req, res) => {
       `UPDATE households
        SET household_name = ?, address = ?, purok = ?, num_members = ?
        WHERE id = ?`,
-      [household_name.trim(), address.trim(), purok ? purok.trim() : null, finalNumMembers, id]
+      [household_name ? household_name.trim() : '', address.trim(), purok ? purok.trim() : null, finalNumMembers, id]
     );
 
     const updated = await query('SELECT * FROM households WHERE id = ?', [id]);
@@ -533,6 +592,32 @@ app.put('/api/households/:id', verifyToken, async (req, res) => {
   } catch (err) {
     console.error('Error updating household:', err);
     res.status(500).json({ message: 'Error updating household' });
+  }
+});
+
+// DELETE /api/households/:id (protected - Admin and Staff only)
+app.delete('/api/households/:id', verifyToken, requireRole(['Admin', 'Staff']), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if household exists
+    const households = await query('SELECT * FROM households WHERE id = ?', [id]);
+    if (households.length === 0) {
+      return res.status(404).json({ message: 'Household not found' });
+    }
+
+    const household = households[0];
+
+    // Delete the household (CASCADE DELETE will handle household_members)
+    await query('DELETE FROM households WHERE id = ?', [id]);
+    
+    // Log the action
+    await createHistoryLog(req, `deleted household: ${household.household_name}`);
+
+    res.json({ message: 'Household deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting household:', err);
+    res.status(500).json({ message: 'Error deleting household' });
   }
 });
 
@@ -686,18 +771,6 @@ app.delete('/api/households/:id/members/:memberId', verifyToken, async (req, res
     if (member.length === 0) {
       return res.status(404).json({ 
         message: 'Household member not found or does not belong to this household.' 
-      });
-    }
-
-    // Prevent deleting if it's the last member (household must have at least 1 member)
-    const memberCount = await query(
-      `SELECT COUNT(*) as count FROM household_members WHERE household_id = ?`,
-      [householdId]
-    );
-
-    if (memberCount[0].count <= 1) {
-      return res.status(400).json({ 
-        message: 'Cannot remove the last member from a household. Delete the household instead.' 
       });
     }
 

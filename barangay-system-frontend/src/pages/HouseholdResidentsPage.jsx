@@ -86,6 +86,13 @@ const HouseholdResidentsPage = () => {
   const [loadingCertificates, setLoadingCertificates] = useState(false);
   const [updating, setUpdating] = useState(false);
 
+  // Add-existing-member form (for selected household)
+  const [allResidents, setAllResidents] = useState([]);
+  const [addMemberForm, setAddMemberForm] = useState({
+    resident_id: '',
+    relation_to_head: '',
+  });
+
   const fetchHouseholds = async () => {
     try {
       setLoading(true);
@@ -96,6 +103,16 @@ const HouseholdResidentsPage = () => {
       alert('Error fetching households');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllResidents = async () => {
+    try {
+      const res = await api.get('/residents');
+      setAllResidents(res.data);
+    } catch (err) {
+      console.error(err);
+      alert('Error fetching residents');
     }
   };
 
@@ -111,6 +128,7 @@ const HouseholdResidentsPage = () => {
 
   useEffect(() => {
     fetchHouseholds();
+    fetchAllResidents();
   }, []);
 
   const handleHouseholdFormChange = (e) => {
@@ -211,11 +229,77 @@ const HouseholdResidentsPage = () => {
   const handleSelectHousehold = (h) => {
     setSelectedHousehold(h);
     fetchMembers(h.id);
+    // Reset add-member form when switching households
+    setAddMemberForm({ resident_id: '', relation_to_head: '' });
   };
 
   const handleEditHouseholdClick = (household) => {
     setEditHouseholdData({ ...household });
     setEditHouseholdOpen(true);
+  };
+
+  const handleAddMemberFormChange = (e) => {
+    const { name, value } = e.target;
+    setAddMemberForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddMemberToHousehold = async (e) => {
+    e.preventDefault();
+    if (!selectedHousehold) {
+      alert('Select a household first.');
+      return;
+    }
+    if (!addMemberForm.resident_id) {
+      alert('Select a resident to add.');
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      await api.post(
+        `/households/${selectedHousehold.id}/members`,
+        addMemberForm
+      );
+      setAddMemberForm({ resident_id: '', relation_to_head: '' });
+      await fetchMembers(selectedHousehold.id);
+      await fetchHouseholds();
+      alert('Member added to household successfully!');
+    } catch (err) {
+      console.error(err);
+      const msg =
+        err.response?.data?.message || 'Error adding member to household';
+      alert(msg);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleDeleteHousehold = async (household) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete household "${household.household_name}"? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      await api.delete(`/households/${household.id}`);
+      await fetchHouseholds();
+
+      if (selectedHousehold && selectedHousehold.id === household.id) {
+        setSelectedHousehold(null);
+        setMembers([]);
+      }
+
+      alert('Household deleted successfully!');
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error deleting household');
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleEditHouseholdSave = async () => {
@@ -751,12 +835,30 @@ const HouseholdResidentsPage = () => {
                         <TableCell>{h.purok || ''}</TableCell>
                         <TableCell>{h.member_count}</TableCell>
                         <TableCell align="center">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditHouseholdClick(h)}
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              gap: 0.5,
+                              justifyContent: 'center',
+                            }}
                           >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEditHouseholdClick(h)}
+                              color="primary"
+                              title="Edit household"
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteHousehold(h)}
+                              color="error"
+                              title="Delete household"
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
                         </TableCell>
                         <TableCell align="center">
                           <Button
@@ -784,6 +886,58 @@ const HouseholdResidentsPage = () => {
                 Members of: {selectedHousehold.household_name} (ID:{' '}
                 {selectedHousehold.id})
               </Typography>
+
+              {/* Add existing resident to this household */}
+              <Box
+                component="form"
+                onSubmit={handleAddMemberToHousehold}
+                noValidate
+                sx={{ mb: 2 }}
+              >
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Resident</InputLabel>
+                      <Select
+                        label="Resident"
+                        name="resident_id"
+                        value={addMemberForm.resident_id}
+                        onChange={handleAddMemberFormChange}
+                      >
+                        <MenuItem value="">
+                          <em>None</em>
+                        </MenuItem>
+                        {allResidents.map((r) => (
+                          <MenuItem key={r.id} value={r.id}>
+                            {r.last_name}, {r.first_name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      size="small"
+                      label="Relation to Head"
+                      name="relation_to_head"
+                      value={addMemberForm.relation_to_head}
+                      onChange={handleAddMemberFormChange}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={updating}
+                    >
+                      {updating ? 'Adding...' : 'Add Member'}
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Divider sx={{ mb: 2 }} />
 
               <TableContainer>
                 <Table size="small">

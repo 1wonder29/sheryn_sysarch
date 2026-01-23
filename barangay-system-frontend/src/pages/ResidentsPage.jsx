@@ -26,6 +26,7 @@ import {
   Select,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import api from '../api';
 
@@ -119,6 +120,29 @@ const ResidentsPage = () => {
   const handleEditClose = () => {
     setEditOpen(false);
     setEditData(null);
+  };
+
+  const handleDeleteResident = async (resident) => {
+    const fullName = `${resident.last_name}, ${resident.first_name}${
+      resident.middle_name ? ' ' + resident.middle_name : ''
+    }`;
+
+    if (
+      !window.confirm(
+        `Are you sure you want to delete resident "${fullName}"? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await api.delete(`/residents/${resident.id}`);
+      await fetchResidents();
+      alert('Resident deleted successfully!');
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error deleting resident');
+    }
   };
 
   const filteredResidents = residents.filter((r) => {
@@ -318,12 +342,30 @@ const ResidentsPage = () => {
                     <TableCell>{r.contact_no || ''}</TableCell>
                     <TableCell>{r.address || ''}</TableCell>
                     <TableCell align="center">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEditClick(r)}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          gap: 0.5,
+                          justifyContent: 'center',
+                        }}
                       >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditClick(r)}
+                          color="primary"
+                          title="Edit Resident"
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteResident(r)}
+                          color="error"
+                          title="Delete Resident"
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
